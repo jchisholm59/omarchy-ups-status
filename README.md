@@ -31,9 +31,9 @@ the UPS is plugged into this machine or into another one on your network.
 omarchy plugin add https://github.com/jchisholm59/omarchy-ups-status.git --enable
 ```
 
-Needs `apcaccess`, which comes with the `apcupsd` package (`omarchy pkg add apcupsd`, or
-`sudo pacman -S apcupsd`), and `python3`, `ping` and `notify-send`, all part of a stock Omarchy
-install. The plugin itself needs no sudo or pkexec.
+Needs `apcaccess`, which comes with the `apcupsd` package (install it with your package manager),
+and `python3`, `ping` and `notify-send`, all part of a stock Omarchy install. The plugin itself runs
+without elevated privileges.
 
 With no settings it reads your own apcupsd at `127.0.0.1:3551`. That works when the UPS is plugged into
 this machine, and when this machine is an apcupsd network client (`UPSCABLE ether`, `UPSTYPE net`,
