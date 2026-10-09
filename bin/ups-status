@@ -1,0 +1,112 @@
+#!/usr/bin/env python3
+"""Read an apcupsd UPS and check the machines it powers; print one JSON object.
+
+Usage: ups-status <host:port> [name=host ...]
+
+<host:port> is any apcupsd Network Information Server: your own machine (127.0.0.1:3551,
+the default when apcupsd runs locally, as a USB master or as a network client) or the
+machine the UPS is plugged into. Each name=host is pinged once (1 s timeout), all in
+parallel. Runs nothing but apcaccess and ping; no network access beyond those.
+"""
+import json, socket, subprocess, sys, time
+
+FIELDS = {
+    "STATUS": "status", "BCHARGE": "charge", "TIMELEFT": "timeLeft", "LOADPCT": "load",
+    "NOMPOWER": "nominalPower", "LINEV": "lineVoltage", "MODEL": "model", "UPSNAME": "upsName",
+    "HOSTNAME": "hostname", "BATTDATE": "batteryDate", "LASTXFER": "lastTransfer",
+    "NUMXFERS": "transfers", "TONBATT": "onBatterySeconds", "SELFTEST": "selfTest",
+    "SERIALNO": "serial", "BATTV": "batteryVoltage", "CABLE": "cable",
+}
+NUMERIC = {"charge", "timeLeft", "load", "nominalPower", "lineVoltage", "transfers",
+           "onBatterySeconds", "batteryVoltage"}
+
+
+def apcaccess(server):
+    try:
+        out = subprocess.run(["apcaccess", "status", server], capture_output=True,
+                             text=True, timeout=5).stdout
+    except FileNotFoundError:
+        return None, "apcaccess not found (install apcupsd)"
+    except subprocess.TimeoutExpired:
+        return None, "no answer from " + server
+    data = {}
+    for line in out.splitlines():
+        key, sep, value = line.partition(":")
+        key = key.strip()
+        if not sep or key not in FIELDS:
+            continue
+        value = value.strip()
+        name = FIELDS[key]
+        if name in NUMERIC:
+            try:
+                value = float(value.split()[0])
+            except (ValueError, IndexError):
+                continue
+        data[name] = value
+    if "status" not in data:
+        return None, "no answer from " + server
+    return data, None
+
+
+def local_addresses():
+    addrs = {"127.0.0.1", "localhost", "::1", socket.gethostname().lower()}
+    try:
+        out = subprocess.run(["hostname", "-I"], capture_output=True, text=True, timeout=2).stdout
+        addrs.update(out.split())
+    except Exception:
+        pass
+    return addrs
+
+
+def main(argv):
+    server = argv[1] if len(argv) > 1 and argv[1] else "127.0.0.1:3551"
+    if ":" not in server:
+        server += ":3551"
+    machines = []
+    for spec in argv[2:]:
+        name, sep, host = spec.partition("=")
+        if not sep:
+            name, host = spec, spec
+        if host:
+            machines.append({"name": name or host, "host": host})
+
+    ups, error = apcaccess(server)
+    result = {"server": server, "ok": ups is not None, "updatedAt": int(time.time())}
+    if ups:
+        result.update(ups)
+        status = ups.get("status", "")
+        result["onBattery"] = "ONBATT" in status
+        result["charging"] = "ONLINE" in status and ups.get("charge", 100) < 95
+        if "load" in ups and "nominalPower" in ups:
+            result["watts"] = round(ups["load"] * ups["nominalPower"] / 100)
+    else:
+        result["error"] = error
+
+    # Ping every machine in parallel; mark this machine and read its own apcupsd client.
+    local = local_addresses()
+    server_host = server.rsplit(":", 1)[0]
+    procs = []
+    for m in machines:
+        p = subprocess.Popen(["ping", "-c", "1", "-W", "1", m["host"]],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        procs.append((m, p))
+    own = None
+    for m, p in procs:
+        try:
+            m["up"] = p.wait(timeout=3) == 0
+        except subprocess.TimeoutExpired:
+            p.kill()
+            m["up"] = False
+        m["isServer"] = m["host"] == server_host
+        m["isSelf"] = m["host"].lower() in local or m["name"].lower() == socket.gethostname().lower()
+        if m["isSelf"] and server_host not in local:
+            if own is None:
+                data, _ = apcaccess("127.0.0.1:3551")
+                own = data.get("status", "") if data else ""
+            m["client"] = own or "not running"
+    result["machines"] = machines
+    print(json.dumps(result))
+
+
+if __name__ == "__main__":
+    main(sys.argv)

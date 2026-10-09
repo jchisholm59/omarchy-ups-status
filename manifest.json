@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "jim.ups-status",
+  "name": "UPS Status",
+  "version": "1.0.0",
+  "author": "jim",
+  "license": "MIT",
+  "description": "An apcupsd UPS on the bar: battery charge, minutes left on battery, load, and the machines it powers, with a notification when mains power is lost or restored.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "UPS Status",
+    "description": "Battery charge and runtime of an apcupsd UPS, and whether the machines on it are up.",
+    "category": "System",
+    "allowMultiple": true,
+    "defaultSection": "right"
+  }
+}
