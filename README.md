@@ -20,7 +20,8 @@ machines the UPS powers, with a notification when mains power is lost or restore
   this machine also shows its own apcupsd client status. **R** or **Refresh** checks now, Esc closes it.
   **Right-click** checks now and opens the panel.
 - **Notifications**: one when the UPS goes on battery or stops answering (critical) and one when power
-  is back (normal), only on a change.
+  is back (normal), only on a change. "Not answering" takes 3 failed checks in a row, so a single dropped
+  check (a busy apcupsd, a network blip) doesn't raise a false alarm.
 
 It works with any UPS apcupsd supports (APC, and CyberPower and others through the USB HID driver), whether
 the UPS is plugged into this machine or into another one on your network.

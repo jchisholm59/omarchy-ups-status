@@ -31,6 +31,10 @@ Panel {
 
   property var ups: null          // last bin/ups-status result
   property string lastState: ""   // "online" | "onbatt" | "unreachable", for notifications
+  property int misses: 0          // failed checks in a row
+  // A busy apcupsd (its network server answers one client at a time) or a network blip can drop one check;
+  // only call the UPS unreachable after this many failures in a row (about 45 s at the default interval).
+  readonly property int missLimit: 3
   property double nowMs: Date.now()
 
   readonly property bool hasData: !!(ups && ups.ok)
@@ -118,8 +122,11 @@ Panel {
       onStreamFinished: {
         var data = null
         try { data = JSON.parse(text) } catch (e) {}
-        root.ups = data || { ok: false, error: "ups-status printed nothing", machines: [] }
+        if (!data) data = { ok: false, error: "ups-status printed nothing", machines: [] }
         root.nowMs = Date.now()
+        if (data.ok) root.misses = 0
+        else if (++root.misses < root.missLimit) return  // keep the last reading ("Updated … ago" shows its age)
+        root.ups = data
         root.handleState()
       }
     }
