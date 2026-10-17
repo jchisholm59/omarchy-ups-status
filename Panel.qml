@@ -32,9 +32,9 @@ Panel {
   property var ups: null          // last bin/ups-status result
   property string lastState: ""   // "online" | "onbatt" | "unreachable", for notifications
   property int misses: 0          // failed checks in a row
-  // A busy apcupsd (its network server answers one client at a time) or a network blip can drop one check;
-  // only call the UPS unreachable after this many failures in a row (about 45 s at the default interval).
-  readonly property int missLimit: 3
+  // A busy apcupsd (its network server answers one client at a time) or a network blip can drop checks;
+  // only call the UPS unreachable after this many failures in a row (about 2 min at the default interval).
+  readonly property int missLimit: 8
   property double nowMs: Date.now()
 
   readonly property bool hasData: !!(ups && ups.ok)
@@ -105,8 +105,9 @@ Panel {
   function handleState() {
     if (!state || state === lastState) return
     if (lastState !== "" && notify) {
-      var urgency = state === "online" ? "normal" : "critical"
-      var title = state === "online" ? "UPS: power restored" : state === "onbatt" ? "UPS: ON BATTERY" : "UPS: not answering"
+      // Only a real power loss stays on screen until dismissed; "not answering" is usually the network, not the UPS.
+      var urgency = state === "onbatt" ? "critical" : "normal"
+      var title = state === "online" ? (lastState === "unreachable" ? "UPS: answering again" : "UPS: power restored") : state === "onbatt" ? "UPS: ON BATTERY" : "UPS: not answering"
       Util.execArgv(["notify-send", "-a", "UPS", "-u", urgency, title, summary()])
     }
     lastState = state

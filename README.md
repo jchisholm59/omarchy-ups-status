@@ -19,9 +19,11 @@ machines the UPS powers, with a notification when mains power is lost or restore
   on the UPS. A filled dot means the machine answers a ping and a hollow one means it doesn't. The line for
   this machine also shows its own apcupsd client status. **R** or **Refresh** checks now, Esc closes it.
   **Right-click** checks now and opens the panel.
-- **Notifications**: one when the UPS goes on battery or stops answering (critical) and one when power
-  is back (normal), only on a change. "Not answering" takes 3 failed checks in a row, so a single dropped
-  check (a busy apcupsd, a network blip) doesn't raise a false alarm.
+- **Notifications**, only on a change: **on battery** is critical (stays on screen until dismissed);
+  **not answering** and the matching **power restored** / **answering again** are normal and close by
+  themselves, since a silent UPS server is almost always the network, not the power. "Not answering" takes
+  8 failed checks in a row (about 2 minutes at the default interval), so a brief network blip or a busy
+  apcupsd doesn't raise an alarm. `"notify": false` turns them all off.
 
 It works with any UPS apcupsd supports (APC, and CyberPower and others through the USB HID driver), whether
 the UPS is plugged into this machine or into another one on your network.
