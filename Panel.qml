@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Io
 import qs.Commons
 import qs.Ui
+import qs.Commons as Commons
 
 // UPS Status: an apcupsd UPS on the bar. Shows the battery charge (and minutes left
 // when on battery); the panel has the details and the machines the UPS powers.
@@ -27,7 +28,7 @@ Panel {
   readonly property var machines: normaliseMachines(setting("machines", []))
   readonly property int interval: Math.max(5, Number(setting("interval", 15)))
   readonly property bool notify: setting("notify", true) !== false
-  readonly property color dim: Qt.darker(Color.popups.text, 1.6)
+  readonly property color dim: Qt.darker(Commons.Color.popups.text, 1.6)
 
   property var ups: null          // last bin/ups-status result
   property string lastState: ""   // "online" | "onbatt" | "unreachable", for notifications
@@ -157,7 +158,7 @@ Panel {
 
   // ---------------------------------------------------------------- panel
   component Label: Text {
-    color: Color.popups.text
+    color: Commons.Color.popups.text
     font.family: Style.font.family
     font.pixelSize: Style.font.body
     elide: Text.ElideRight
@@ -216,7 +217,7 @@ Panel {
               wrapMode: Text.Wrap
               elide: Text.ElideNone
               text: root.summary()
-              color: root.alarm ? Color.urgent : Color.popups.text
+              color: root.alarm ? Commons.Color.urgent : Commons.Color.popups.text
             }
           }
 
@@ -226,12 +227,12 @@ Panel {
             visible: root.hasData
             implicitHeight: Style.space(10)
             radius: Style.space(5)
-            color: Util.alpha(Color.popups.text, 0.12)
+            color: Util.alpha(Commons.Color.popups.text, 0.12)
             Rectangle {
               width: parent.width * Math.max(0, Math.min(100, root.hasData ? root.ups.charge : 0)) / 100
               height: parent.height
               radius: parent.radius
-              color: root.alarm ? Color.urgent : Color.accent
+              color: root.alarm ? Commons.Color.urgent : Commons.Color.accent
             }
           }
 
@@ -267,7 +268,7 @@ Panel {
                 required property var modelData
                 Layout.fillWidth: true
                 spacing: Style.spacing.lg
-                Label { text: row.modelData.up ? "●" : "○"; color: row.modelData.up ? Color.accent : Color.urgent }
+                Label { text: row.modelData.up ? "●" : "○"; color: row.modelData.up ? Commons.Color.accent : Commons.Color.urgent }
                 ColumnLayout {
                   Layout.fillWidth: true
                   spacing: 0
@@ -301,7 +302,7 @@ Panel {
             }
             Button {
               text: "Refresh"
-              foreground: Color.popups.text
+              foreground: Commons.Color.popups.text
               bordered: true
               enabled: !proc.running
               tooltipText: "Check now (R)"
